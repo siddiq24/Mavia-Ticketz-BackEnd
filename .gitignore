@@ -1,0 +1,5 @@
+.env
+.fresh.*
+*.http
+tmp
+docs
