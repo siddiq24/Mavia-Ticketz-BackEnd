@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -12,6 +13,7 @@ func VerifyToken(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
+		log.Println(authHeader)
 		return
 	}
 
