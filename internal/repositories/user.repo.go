@@ -4,23 +4,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/siddiq24/Tickitz-DB/internal/models"
 )
 
 type UserRepository interface {
 	CreateUser(username, password, role, email string) (models.User, error)
 	GetUserByUsernameOrEmail(identifier string) (models.User, error)
+	BlacklistToken(ctx context.Context, token string, duration time.Duration) error
+	IsTokenBlacklisted(ctx context.Context, token string) (bool, error)
 }
 
 type userRepository struct {
-	db *pgxpool.Pool
+	db  *pgxpool.Pool
+	rdb *redis.Client
 }
 
-func NewUserRepository(db *pgxpool.Pool) UserRepository {
-	return &userRepository{db: db}
+func NewUserRepository(db *pgxpool.Pool, rdb *redis.Client) UserRepository {
+	return &userRepository{db: db, rdb: rdb}
 }
 
 func (r *userRepository) CreateUser(username, password, role, email string) (models.User, error) {
@@ -46,7 +51,6 @@ func (r *userRepository) CreateUser(username, password, role, email string) (mod
 		return models.User{}, err
 	}
 	return user, nil
-
 }
 
 func (r *userRepository) GetUserByUsernameOrEmail(identifier string) (models.User, error) {
@@ -64,4 +68,19 @@ func (r *userRepository) GetUserByUsernameOrEmail(identifier string) (models.Use
 	}
 
 	return user, nil
+}
+
+func (r *userRepository) BlacklistToken(ctx context.Context, token string, duration time.Duration) error {
+	return r.rdb.Set(ctx, "blacklist:"+token, "true", duration).Err()
+}
+
+func (r *userRepository) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
+	val, err := r.rdb.Get(ctx, "blacklist:"+token).Result()
+	if err == redis.Nil {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return val == "true", nil
 }
