@@ -10,23 +10,27 @@ import (
 )
 
 func VerifyToken(c *gin.Context) {
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
-		log.Println(authHeader)
+	tokenString := c.GetHeader("Authorization")
+	if tokenString == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing authentication token"})
+		c.Abort()
 		return
 	}
 
-	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-	claims, err := utils.ValidateJWT(tokenStr)
+	tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+	claims, err := utils.ValidateJWT(tokenString)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		c.Abort()
+		log.Println(err)
 		return
 	}
 
-	// simpan username & role
-	c.Set("user_id", claims.UserID)
+	// Set user information in context
+	c.Set("userID", claims.UserID)
 	c.Set("username", claims.Username)
 	c.Set("role", claims.Role)
+
 	c.Next()
 }
