@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/siddiq24/Tickitz-DB/internal/repositories"
@@ -116,4 +119,24 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			"role":     user.Role,
 		},
 	})
+}
+
+// Logout handler
+func (h *AuthHandler) Logout(c *gin.Context) {
+	tokenString := c.GetHeader("Authorization")
+	if tokenString == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
+		return
+	}
+
+	tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+	// blacklist via repo
+	err := h.repo.BlacklistToken(context.Background(), tokenString, time.Hour*1)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to blacklist token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
 }
