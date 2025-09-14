@@ -3,14 +3,15 @@ package routers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/siddiq24/Tickitz-DB/internal/handlers"
 	"github.com/siddiq24/Tickitz-DB/internal/middlewares"
 	"github.com/siddiq24/Tickitz-DB/internal/repositories"
 )
 
-func InitAuthRouter(router *gin.Engine, db *pgxpool.Pool) {
+func InitAuthRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	authRouter := router.Group("/auth")
-	repo := repositories.NewUserRepository(db)
+	repo := repositories.NewUserRepository(db, rdb)
 	handler := handlers.NewAuthHandler(repo)
 
 	// Register & Login (public)
@@ -19,4 +20,5 @@ func InitAuthRouter(router *gin.Engine, db *pgxpool.Pool) {
 
 	// Protected route
 	authRouter.GET("/profile", middlewares.VerifyToken, middlewares.Access("user", "admin"), handler.Profile)
+	authRouter.POST("/logout", middlewares.VerifyToken, handler.Logout)
 }
