@@ -2,12 +2,15 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/siddiq24/Tickitz-DB/internal/models"
 )
 
@@ -22,27 +25,57 @@ type MovieRepository interface {
 }
 
 type movieRepository struct {
-	db *pgxpool.Pool
+	db  *pgxpool.Pool
+	rdb *redis.Client
 }
 
-func NewMovieRepository(db *pgxpool.Pool) MovieRepository {
-	return &movieRepository{db: db}
+func NewMovieRepository(db *pgxpool.Pool, rdb *redis.Client) MovieRepository {
+	return &movieRepository{db: db, rdb: rdb}
 }
 
 func (r *movieRepository) GetUpcoming() ([]models.Movie, error) {
+	ctx := context.Background()
+	redisKey := "movies:upcoming"
+
+	// cek redis
+	cmd := r.rdb.Get(ctx, redisKey)
+	if r.rdb == nil {
+		log.Println("Redis client belum diinisialisasi!")
+	}
+	if cmd.Err() == nil {
+		// cache hit
+		var cachedMovies []models.Movie
+		cmdByte, err := cmd.Bytes()
+		if err == nil {
+			if err := json.Unmarshal(cmdByte, &cachedMovies); err == nil {
+				if len(cachedMovies) > 0 {
+					log.Println("Cache hit: upcoming movies")
+					return cachedMovies, nil
+				}
+			} else {
+				log.Println("Unmarshal error:", err)
+			}
+		} else {
+			log.Println("Redis GET bytes error:", err)
+		}
+	} else if cmd.Err() != redis.Nil {
+		log.Println("Redis GET error:", cmd.Err())
+	}
+
+	// kalau cache miss → ambil dari DB
 	query := `
-		SELECT m.id, m.title, m.description, m.release_date, m.duration,
-		       m.poster_img, m.backdrop_img, m.rating, m.is_upcoming,
-		       m.created_at, m.directors_id,
-		       COALESCE(array_agg(DISTINCT g.name) FILTER (WHERE g.name IS NOT NULL), '{}') AS genres
-		FROM movies m
-		LEFT JOIN genre_movie mg ON m.id = mg.movie_id
-		LEFT JOIN genres g ON mg.genre_id = g.id
-		WHERE m.is_upcoming = true
-		GROUP BY m.id
-		ORDER BY m.release_date ASC
-	`
-	rows, err := r.db.Query(context.Background(), query)
+        SELECT m.id, m.title, m.description, m.release_date, m.duration,
+               m.poster_img, m.backdrop_img, m.rating, m.is_upcoming,
+               m.created_at, m.directors_id,
+               COALESCE(array_agg(DISTINCT g.name) FILTER (WHERE g.name IS NOT NULL), '{}') AS genres
+        FROM movies m
+        LEFT JOIN genre_movie mg ON m.id = mg.movie_id
+        LEFT JOIN genres g ON mg.genre_id = g.id
+        WHERE m.is_upcoming = true
+        GROUP BY m.id
+        ORDER BY m.release_date ASC
+    `
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -51,14 +84,31 @@ func (r *movieRepository) GetUpcoming() ([]models.Movie, error) {
 	var movies []models.Movie
 	for rows.Next() {
 		var m models.Movie
-		err := rows.Scan(&m.ID, &m.Title, &m.Description, &m.ReleaseDate, &m.Duration,
+		if err := rows.Scan(&m.ID, &m.Title, &m.Description, &m.ReleaseDate, &m.Duration,
 			&m.PosterImg, &m.BackdropImg, &m.Rating, &m.IsUpcoming,
-			&m.CreatedAt, &m.DirectorsID, &m.Genres)
-		if err != nil {
+			&m.CreatedAt, &m.DirectorsID, &m.Genres); err != nil {
 			return nil, err
 		}
 		movies = append(movies, m)
 	}
+
+	// simpan ke cache
+	if len(movies) > 0 {
+		bt, err := json.Marshal(movies)
+		if err == nil {
+			if err := r.rdb.Set(ctx, redisKey, string(bt), 24*time.Hour).Err(); err != nil {
+				log.Println("Redis SET error:", err)
+			} else {
+				log.Println("Cache updated: upcoming movies")
+			}
+		} else {
+			log.Println("Marshal error:", err)
+		}
+	}
+	if r.rdb == nil {
+		log.Println("Redis client belum diinisialisasi!")
+	}
+
 	return movies, nil
 }
 
@@ -197,6 +247,6 @@ func (r *movieRepository) UpdateMovie(id int, req models.UpdateMovieRequest) err
 }
 
 func (r *movieRepository) DeleteMovie(id int) error {
-	_, err := r.db.Exec(context.Background(), "DELETE FROM movies WHERE id=$1", id)
+	_, err := r.db.Exec(context.Background(), "DELETE FROM movies WHERE id=$1", id) // nanti diganti
 	return err
 }
