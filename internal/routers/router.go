@@ -3,13 +3,14 @@ package routers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	docs "github.com/siddiq24/Tickitz-DB/docs"
 	"github.com/siddiq24/Tickitz-DB/internal/middlewares"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func InitRouter(db *pgxpool.Pool) *gin.Engine {
+func InitRouter(db *pgxpool.Pool, rdb *redis.Client) *gin.Engine {
 	r := gin.Default()
 
 	r.Use(middlewares.CORSMiddleware())
@@ -18,8 +19,8 @@ func InitRouter(db *pgxpool.Pool) *gin.Engine {
 	r.GET("/swag/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	Ping_Router(r, db)
-	InitAuthRouter(r, db)
-	InitMovieRouter(r, db)
+	InitAuthRouter(r, db, rdb)
+	InitMovieRouter(r, db, rdb)
 	InitScheduleRouter(r, db)
 	InitSeatRouter(r, db)
 	InitOrderRouter(r, db)
