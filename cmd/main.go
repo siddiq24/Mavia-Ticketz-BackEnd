@@ -18,18 +18,30 @@ import (
 // @in header
 // @name Authorization
 func main() {
+	// init database
 	db, err := configs.InitDB()
 	if err != nil {
 		log.Fatal("failed to connect database: ", err)
 	}
 	defer db.Close()
 
-	r := routers.InitRouter(db)
+	// init redis
+	rc, err := configs.InitRedis()
+	if err != nil {
+		log.Fatal("failed to connect redis: ", err)
+	}
+	defer rc.Close()
 
+	// init router dengan dependency db & redis
+	r := routers.InitRouter(db, rc)
+
+	// server port
 	port := ":8085"
 	log.Println("Server running on:", port)
+
 	DB := os.Getenv("DBNAME")
 	log.Printf("\n\nCONNECT TO DATABASE : %s <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n", DB)
+
 	if err := r.Run(port); err != nil {
 		log.Fatal(err)
 	}
