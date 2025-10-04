@@ -10,10 +10,11 @@ import (
 )
 
 func InitRedis() (*redis.Client, error) {
-	addr := os.Getenv("ADDR")
-	port := os.Getenv("PORT")
+	addr := os.Getenv("REDIS_HOST")
+	// addr := "localhost"
+	port := os.Getenv("REDIS_PORT")
 	// user := os.Getenv("USER")
-	password := os.Getenv("PASSWORD")
+	// password := os.Getenv("PASSWORD")
 
 	redisAddr := fmt.Sprintf("%s:%s", addr, port)
 
@@ -21,7 +22,7 @@ func InitRedis() (*redis.Client, error) {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 		// Username: user,
-		Password: password,
+		// Password: password,
 		// DB:       0,
 	})
 

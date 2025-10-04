@@ -9,11 +9,13 @@ import (
 )
 
 func InitDB() (*pgxpool.Pool, error) {
-	dbUser := os.Getenv("DBUSER")
-	dbPass := os.Getenv("DBPASS")
-	dbHost := os.Getenv("DBHOST")
-	dbPort := os.Getenv("DBPORT")
-	dbName := os.Getenv("DBNAME")
+	dbUser := os.Getenv("DB_USER")
+	// dbUser := "postgres"
+	dbPass := os.Getenv("DB_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	// dbHost := "localhost"
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
 
 	// Format: postgres://username:password@host:port/dbname
 	cons := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPass, dbHost, dbPort, dbName)
