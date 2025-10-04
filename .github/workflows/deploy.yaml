@@ -1,0 +1,86 @@
+name: Building Image and Pushing to GHCR
+on: [push]
+jobs:
+  Build-And-Publish:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Building image for ${{ github.repository }}."
+      - name: Check out repository code
+        uses: actions/checkout@v5
+      - name: Build and publish a Docker image for ${{ github.repository }}
+        uses: macbre/push-to-ghcr@master
+        with:
+          image_name: ${{ github.repository }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+
+# name: Deploy Mavia Tickitz App
+# run-name: ${{ github.actor }}
+
+# on:
+#   push:
+#     branches: ["main"]
+
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # 1. Checkout repository
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       # 2. Set up Docker Buildx
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
+
+#       # 3. Login ke DockerHub
+#       - name: Login to DockerHub
+#         uses: docker/login-action@v3
+#         with:
+#           username: ${{ secrets.DOCKERHUB_USERNAME }}
+#           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+#       # 4. Build & push Docker images (frontend & backend) secara multi-platform
+#       - name: Build and push Docker images
+#         run: |
+#           docker buildx build --platform linux/amd64 -t ${{ secrets.DOCKERHUB_USERNAME }}/tickitz-frontend ./FRONTEND --push
+#           docker buildx build --platform linux/amd64 -t ${{ secrets.DOCKERHUB_USERNAME }}/tickitz-backend ./BACKEND --push
+
+#       # 5. Deploy ke VPS via SSH
+#       - name: Deploy to VPS
+#         uses: appleboy/ssh-action@v1
+#         with:
+#           host: ${{ secrets.VPS_HOST }}
+#           username: ${{ secrets.VPS_USER }}
+#           key: ${{ secrets.VPS_SSH_KEY }}
+#           script: |
+#             cd ~/TICKITZZ-APP
+
+#             # Bersihkan image lama
+#             docker system prune -f
+
+#             # Pull image terbaru
+#             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/tickitz-frontend
+#             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/tickitz-backend
+
+#             # Update file .env
+#             cat > .env <<EOF
+# DB_HOST=db
+# DB_USER=${{ secrets.DB_USER }}
+# DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+# DB_NAME=${{ secrets.DB_NAME }}
+# DB_PORT=5432
+# POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+# POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+# POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+# VITE_BASE_URL=${{ secrets.VITE_BASE_URL }}
+# REDIS_HOST=redis
+# REDIS_PORT=6379
+# EOF
+
+#             # Restart hanya frontend & backend agar database/redis tidak terganggu
+#             docker-compose up -d --no-deps --build frontend backend
+
+#             # Opsional: cek status container
+#             docker ps
