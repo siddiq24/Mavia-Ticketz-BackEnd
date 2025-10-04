@@ -12,19 +12,24 @@ import (
 
 func InitRouter(db *pgxpool.Pool, rdb *redis.Client) *gin.Engine {
 	r := gin.Default()
+	r.Use(gin.Recovery(), middlewares.RecoveryWithLog())
 
 	r.Use(middlewares.CORSMiddleware())
 
 	docs.SwaggerInfo.BasePath = "/"
 	r.GET("/swag/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	r.Static("/backdrop", "uploads/backdrops/")
+	r.Static("/poster", "uploads/posters/")
+	r.Static("/uploads", "./uploads")
 
 	Ping_Router(r, db)
 	InitAuthRouter(r, db, rdb)
 	InitMovieRouter(r, db, rdb)
 	InitScheduleRouter(r, db)
 	InitSeatRouter(r, db)
-	InitOrderRouter(r, db)
-	InitProfileRouter(r, db)
+	InitOrderRouter(r, db, rdb)
+	InitProfileRouter(r, db, rdb)
+	InitDashboardRouter(r, db)
 
 	//NOT FOUND
 	r.NoRoute(func(ctx *gin.Context) {

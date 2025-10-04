@@ -19,6 +19,7 @@ func InitAuthRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	authRouter.POST("/login", handler.Login)
 
 	// Protected route
-	authRouter.GET("/profile", middlewares.VerifyToken, middlewares.Access("user", "admin"), handler.Profile)
-	authRouter.POST("/logout", middlewares.VerifyToken, handler.Logout)
+	authRouter.GET("/profile", middlewares.VerifyToken(rdb), middlewares.Access("user", "admin"), handler.Profile)
+	authRouter.DELETE("/logout", middlewares.VerifyToken(rdb), handler.Logout)
+	authRouter.PATCH("/update-password", middlewares.VerifyToken(rdb), middlewares.Access("user", "admin"), handler.UpdatePassword)
 }

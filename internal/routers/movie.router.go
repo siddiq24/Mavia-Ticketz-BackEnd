@@ -10,19 +10,42 @@ import (
 )
 
 func InitMovieRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
+	movieRouter := router.Group("/movies")
+	adminRouter := router.Group("/admin/movies")
+
+	userRepo := repositories.NewUserRepository(db, rdb)
+	jwtMiddleware := middlewares.JWTAuthMiddleware(userRepo)
+	scheduleRepo := repositories.NewScheduleRepository(db)
+	scheduleHandler := handlers.NewScheduleHandler(scheduleRepo)
+
+	adminRouter.Use(middlewares.VerifyToken(rdb), jwtMiddleware)
+
 	movieRepo := repositories.NewMovieRepository(db, rdb)
 	movieHandler := handlers.NewMovieHandler(movieRepo)
+	adminHandler := handlers.NewAdminHandler(movieRepo)
 
-	movieRouter := router.Group("/movies")
-	adminRouter := router.Group("/admin")
-	adminRouter.Use(middlewares.VerifyToken)
+	// =======================
+	// Public Routes (User)
+	// =======================
+	movieRouter.GET("/:id", movieHandler.GetMovieByID)
+	movieRouter.GET("/upcoming", movieHandler.GetUpcoming)
+	movieRouter.GET("/popular", movieHandler.GetPopular)
+	movieRouter.GET("", movieHandler.GetByFilter)
+	movieRouter.GET("/genres", movieHandler.GetGenres)
+	movieRouter.GET("/:id/schedules", scheduleHandler.GetSchedulesById)
 
-	{
-		movieRouter.GET("/upcoming", movieHandler.GetUpcoming)
-		movieRouter.GET("/popular", movieHandler.GetPopular)
-		movieRouter.GET("", movieHandler.GetByFilter)
-		movieRouter.GET("/:id", movieHandler.GetMovieByID)
-		adminRouter.PATCH("/:id", movieHandler.UpdateMovie)
-		adminRouter.DELETE("/:id", movieHandler.DeleteMovie)
-	}
+	// // serve gambar poster & backdrop
+	// movieRouter.GET("/poster/:filename", movieHandler.GetPoster)
+	// movieRouter.GET("/backdrop/:filename", movieHandler.GetBackdrop)
+
+	// =======================
+	// Admin Routes
+	// =======================
+	adminRouter.POST("", adminHandler.CreateMovieWithSchedules) // POST /admin/movies
+	adminRouter.GET("/uploads/:filename", adminHandler.ServeUploadedFiles)
+	adminRouter.GET("", adminHandler.GetMovies)    // GET /admin/movies
+	adminRouter.GET("/:id", adminHandler.GetMovie) // GET /admin/movies/:id
+	// adminRouter.PATCH("/:id", movieHandler.UpdateMovie)         // PATCH /admin/movies/:id
+	adminRouter.DELETE("/:id", adminHandler.DeleteMovie) // DELETE /admin/movies/:id
+	// adminRouter.PUT("/:id/backdrop", movieHandler.UpdateBackdrop)
 }
