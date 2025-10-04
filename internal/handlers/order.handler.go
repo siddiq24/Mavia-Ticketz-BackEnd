@@ -35,31 +35,31 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// ambil user_id dari context (diset oleh middleware VerifyToken)
+	// Ambil user_id dari context (hasil VerifyToken)
 	userIDVal, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	userID := int64(userIDVal.(int))
 
-	var userID int
-	switch v := userIDVal.(type) {
-	case int:
-		userID = v
-	case float64:
-		userID = int(v)
-	default:
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id type"})
-		return
-	}
-
-	order, err := h.repo.CreateOrder(userID, req)
+	// mapping seats -> seat_id
+	seatIDs, err := h.repo.GetSeatIDs(c, req.Seats)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"data": order})
+	err = h.repo.CreateOrder(c, userID, req.PersonalInfo.FullName, req.PersonalInfo.Email, req.PersonalInfo.Phone, req.Total, req.ScheduleID, seatIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "order created",
+	})
 }
 
 // GetHistory godoc

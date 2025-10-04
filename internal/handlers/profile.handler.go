@@ -19,14 +19,15 @@ func NewProfileHandler(repo repositories.ProfileRepository) *ProfileHandler {
 
 // GetProfile godoc
 // @Summary Get user profile
-// @Description Get profile of logged-in user
-// @Tags Auth
-// @Security BearerAuth
+// @Description Get profile data of the current user
+// @Tags Profile
+// @Accept json
 // @Produce json
-// @Success 200 {object} models.ProfileResponse
+// @Success 200 {object} models.Profile
 // @Failure 401 {object} map[string]string
-// @Router /auth/profile [get]
+// @Router /profile [get]
 func (h *ProfileHandler) GetProfile(c *gin.Context) {
+	var _ models.Profile
 	userIDVal, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
