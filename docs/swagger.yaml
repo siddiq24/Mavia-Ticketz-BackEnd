@@ -1,0 +1,434 @@
+basePath: /
+definitions:
+  handlers.PingResponse:
+    properties:
+      contentType:
+        example: application/json
+        type: string
+      message:
+        example: pong
+        type: string
+      requestId:
+        example: "123"
+        type: string
+    type: object
+  models.CreateOrderRequest:
+    properties:
+      email:
+        type: string
+      fullname:
+        type: string
+      payment_method_id:
+        type: integer
+      phone:
+        type: string
+      schedule_id:
+        type: integer
+      seats:
+        items:
+          type: string
+        type: array
+    required:
+    - email
+    - fullname
+    - payment_method_id
+    - phone
+    - schedule_id
+    - seats
+    type: object
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.Profile:
+    properties:
+      address:
+        example: jl.situmorang
+        type: string
+      avatar:
+        example: /uploads/avatars/ucup.png
+        type: string
+      phone:
+        example: "0891237654"
+        type: string
+      point:
+        example: 86
+        type: integer
+      role:
+        example: user
+        type: string
+      token:
+        example: yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1LCJ1c2VybmFtZSI6IlNpdGkgQW1pbmFoIiwicm9sZSI6InVzZXIiLCJleHAiOjE3NTgxMjAzNDMsImlhdCI6MTc1ODAzMzk0M30.KBHwCpiUx4pVUbflSYYTIM3fIbaMOXL8e4RGCVhRmHk
+        type: string
+      user_id:
+        example: 24
+        type: integer
+      username:
+        example: Martin Paes
+        type: string
+    type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  models.UpdatePasswordRequest:
+    properties:
+      new_password:
+        example: newpassword
+        type: string
+      old_password:
+        example: "123456"
+        type: string
+    type: object
+  models.UpdateProfileRequest:
+    properties:
+      address:
+        type: string
+      avatar:
+        type: string
+      birthdate:
+        type: string
+      phone:
+        type: string
+    type: object
+host: localhost:8085
+info:
+  contact: {}
+  description: RESTful API created using TICKITZ
+  title: TICKITZ
+  version: "1.0"
+paths:
+  /admin/movies:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a new movie with details, poster & backdrop upload, and
+        schedules.
+      parameters:
+      - description: Movie Title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Movie Description
+        in: formData
+        name: description
+        required: true
+        type: string
+      - description: Release Date (YYYY-MM-DD)
+        in: formData
+        name: release_date
+        required: true
+        type: string
+      - description: Duration in minutes
+        in: formData
+        name: duration
+        required: true
+        type: integer
+      - description: Director ID
+        in: formData
+        name: director_id
+        required: true
+        type: integer
+      - description: Movie Rating (0-10)
+        in: formData
+        name: rating
+        type: number
+      - collectionFormat: csv
+        description: Genre IDs (multiple allowed)
+        in: formData
+        items:
+          type: integer
+        name: genre_ids
+        type: array
+      - collectionFormat: csv
+        description: Caster IDs (multiple allowed)
+        in: formData
+        items:
+          type: integer
+        name: caster_ids
+        type: array
+      - description: Schedules JSON string
+        in: formData
+        name: schedules
+        type: string
+      - description: Poster image
+        in: formData
+        name: poster
+        type: file
+      - description: Backdrop image
+        in: formData
+        name: backdrop
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Movie created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new movie with schedules
+      tags:
+      - Admin
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with email & password to get JWT token
+      parameters:
+      - description: Login Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login user
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account
+      parameters:
+      - description: Register Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register user
+      tags:
+      - Auth
+  /auth/update-password:
+    put:
+      consumes:
+      - application/json
+      description: Change the user's password
+      parameters:
+      - description: Update Password Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdatePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update user password
+      tags:
+      - Auth
+  /orders:
+    post:
+      consumes:
+      - application/json
+      description: User create order with schedule & seats
+      parameters:
+      - description: Order Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new order
+      tags:
+      - Orders
+  /ping:
+    get:
+      description: Returns pong response
+      parameters:
+      - description: Header for requestID
+        in: header
+        name: X-Request-ID
+        required: true
+        type: integer
+      - description: Header for body type
+        in: header
+        name: Content-Type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.PingResponse'
+      summary: Get Ping
+      tags:
+      - ping
+  /profile:
+    get:
+      consumes:
+      - application/json
+      description: Get profile data of the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Profile'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get user profile
+      tags:
+      - Profile
+    patch:
+      consumes:
+      - application/json
+      description: Edit profile info (username, avatar, etc.)
+      parameters:
+      - description: Update Profile
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Profile
+  /profile/history:
+    get:
+      description: Get all past orders of logged-in user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get order history
+      tags:
+      - Profile
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
