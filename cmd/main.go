@@ -39,7 +39,7 @@ func main() {
 	port := ":8085"
 	log.Println("Server running on:", port)
 
-	DB := os.Getenv("DBNAME")
+	DB := os.Getenv("DB_NAME")
 	log.Printf("\n\nCONNECT TO DATABASE : %s <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n", DB)
 
 	if err := r.Run(port); err != nil {
