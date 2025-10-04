@@ -9,6 +9,7 @@ import (
 
 type ScheduleRepository interface {
 	GetSchedules() ([]models.Schedule, error)
+	GetSchedulesById(ctx context.Context, movieID int) ([]models.ScheduleResponse, error)
 }
 
 type scheduleRepository struct {
@@ -55,5 +56,38 @@ func (r *scheduleRepository) GetSchedules() ([]models.Schedule, error) {
 		}
 		schedules = append(schedules, s)
 	}
+	return schedules, nil
+}
+
+func (r *scheduleRepository) GetSchedulesById(ctx context.Context, movieID int) ([]models.ScheduleResponse, error) {
+
+	query := `
+		SELECT s.id, s.date,
+		       c.name as cinema, c.image,
+		       t.time, ct.name as location
+		FROM schedules s
+		JOIN movies m ON s.movie_id = m.id
+		JOIN cinemas c ON s.cinema_id = c.id
+		JOIN times t ON s.time_id = t.id
+		JOIN cities ct ON s.city_id = ct.id
+		WHERE m.id = $1
+		ORDER BY s.date, t.time
+	`
+
+	rows, err := r.db.Query(ctx, query, movieID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var schedules []models.ScheduleResponse
+	for rows.Next() {
+		var s models.ScheduleResponse
+		if err := rows.Scan(&s.ID, &s.Date, &s.Cinema, &s.Image, &s.Time, &s.Location); err != nil {
+			return nil, err
+		}
+		schedules = append(schedules, s)
+	}
+
 	return schedules, nil
 }

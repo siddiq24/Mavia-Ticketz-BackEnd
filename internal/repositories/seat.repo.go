@@ -45,7 +45,7 @@ func (r *seatRepository) GetAvailableSeats(scheduleID int) ([]models.AvailableSe
 		if err := rows.Scan(&seat.ID, &seat.Cols, &seat.Rows); err != nil {
 			return nil, err
 		}
-		seat.Status = "available" // karena hanya kursi available yang diambil
+		// seat.Status = "available"
 		seats = append(seats, seat)
 	}
 	return seats, nil
