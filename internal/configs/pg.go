@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func InitDB() (*pgxpool.Pool, error, string) {
+func InitDB() (*pgxpool.Pool, string, error) {
 	dbUser := os.Getenv("DB_USER")
 	// dbUser := "postgres"
 	dbPass := os.Getenv("DB_PASSWORD")
@@ -21,12 +21,12 @@ func InitDB() (*pgxpool.Pool, error, string) {
 	cons := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPass, dbHost, dbPort, dbName)
 	db, err := pgxpool.New(context.Background(), cons)
 	if err != nil {
-		return nil, err, "Not Found"
+		return nil, "Not Found", err
 	}
 
 	if err := db.Ping(context.Background()); err != nil {
-		return nil, err, "Not Found"
+		return nil, "Not Found", err
 	}
 
-	return db, nil, dbName
+	return db, cons, nil
 }

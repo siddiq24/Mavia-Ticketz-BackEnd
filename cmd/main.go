@@ -18,7 +18,7 @@ import (
 // @name Authorization
 func main() {
 	// init database
-	db, err, DB := configs.InitDB()
+	db, DB, err := configs.InitDB()
 	if err != nil {
 		log.Fatal("failed to connect database: ", err)
 	}
