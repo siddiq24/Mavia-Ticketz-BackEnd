@@ -13,6 +13,6 @@ func InitScheduleRouter(router *gin.Engine, db *pgxpool.Pool) {
 
 	scheduleRouter := router.Group("/schedules")
 	{
-		scheduleRouter.GET("", scheduleHandler.GetSchedules)
+		scheduleRouter.GET("/:id", scheduleHandler.GetSchedules)
 	}
 }
