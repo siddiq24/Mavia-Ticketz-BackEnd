@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/siddiq24/Tickitz-DB/internal/configs"
@@ -19,7 +18,7 @@ import (
 // @name Authorization
 func main() {
 	// init database
-	db, err := configs.InitDB()
+	db, err, DB := configs.InitDB()
 	if err != nil {
 		log.Fatal("failed to connect database: ", err)
 	}
@@ -39,7 +38,6 @@ func main() {
 	port := ":8085"
 	log.Println("Server running on:", port)
 
-	DB := os.Getenv("DB_NAME")
 	log.Printf("\n\nCONNECT TO DATABASE : %s <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n", DB)
 
 	if err := r.Run(port); err != nil {
